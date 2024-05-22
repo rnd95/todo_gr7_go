@@ -20,12 +20,12 @@ type Configuration struct {
 
 func GetConfiguration() Configuration {
 	return Configuration{
-		DatabaseName:        getOrDefault("DB_NAME", "gr7-db"),
+		DatabaseName:        getOrDefault("DB_NAME", "ToDoList"),
 		DatabaseHost:        getOrDefault("DB_HOST", "127.0.0.1:5432"),
 		DatabaseUser:        getOrDefault("DB_USER", "postgres"),
 		DatabasePassword:    getOrDefault("DB_PASSWORD", "postgres"),
 		MigrateToVersion:    getOrDefault("MIGRATE", "latest"),
-		MigrationLocation:   getOrDefault("MIGRATION_LOCATION", "internal/infra/database/migrations"),
+		MigrationLocation:   getOrDefault("MIGRATION_LOCATION", "E:/golang/todo-gr7-go/internal/infra/database/migrations"),
 		FileStorageLocation: getOrDefault("FILES_LOCATION", "file_storage"),
 		JwtSecret:           getOrDefault("JWT_SECRET", "1234567890"),
 		JwtTTL:              72 * time.Hour,

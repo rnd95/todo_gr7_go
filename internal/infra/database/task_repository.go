@@ -23,6 +23,11 @@ type task struct {
 
 type TaskRepository interface {
 	Save(t domain.Task) (domain.Task, error)
+	FindById(id uint64) (domain.Task, error)
+	Update(dev domain.Task) (domain.Task, error)
+	Delete(id uint64) error
+	FindForUser(id uint64) ([]domain.Task, error)
+	MarkCompleted(id uint64) (domain.Task, error)
 }
 
 type taskRepository struct {
@@ -47,6 +52,55 @@ func (r taskRepository) Save(t domain.Task) (domain.Task, error) {
 	}
 	t = r.mapModelToDomain(tsk)
 	return t, nil
+}
+
+func (r taskRepository) FindById(id uint64) (domain.Task, error) {
+	var t task
+	err := r.coll.Find(db.Cond{"id": id, "deleted_date": nil}).One(&t)
+	if err != nil {
+		return domain.Task{}, err
+	}
+
+	return r.mapModelToDomain(t), nil
+}
+
+func (r taskRepository) Update(t domain.Task) (domain.Task, error) {
+	m := r.mapDomainToModel(t)
+	m.UpdatedDate = time.Now()
+	err := r.coll.Find(db.Cond{"id": m.Id, "deleted_date": nil}).Update(&m)
+	if err != nil {
+		return domain.Task{}, err
+	}
+	return r.mapModelToDomain(m), nil
+}
+
+func (r taskRepository) MarkCompleted(id uint64) (domain.Task, error) {
+	var m task
+	err := r.coll.Find(db.Cond{"id": id, "deleted_date": nil}).One(&m)
+	if err != nil {
+		return domain.Task{}, err
+	}
+	m.UpdatedDate = time.Now()
+	m.Status = domain.Done
+	err = r.coll.Find(db.Cond{"id": m.Id, "deleted_date": nil}).Update(&m)
+	if err != nil {
+		return domain.Task{}, err
+	}
+	return r.mapModelToDomain(m), nil
+}
+
+func (r taskRepository) Delete(id uint64) error {
+	return r.coll.Find(db.Cond{"id": id, "deleted_date": nil}).Update(map[string]interface{}{"deleted_date": time.Now()})
+}
+
+func (r taskRepository) FindForUser(id uint64) ([]domain.Task, error) {
+	var tasks []task
+	err := r.coll.Find(db.Cond{"user_id": id, "deleted_date": nil}).All(&tasks)
+	if err != nil {
+		return nil, err
+	}
+	res := r.mapModelToDomainCollection(tasks)
+	return res, nil
 }
 
 func (r taskRepository) mapDomainToModel(t domain.Task) task {
@@ -75,4 +129,13 @@ func (r taskRepository) mapModelToDomain(t task) domain.Task {
 		UpdatedDate: t.UpdatedDate,
 		DeletedDate: t.DeletedDate,
 	}
+}
+
+func (r taskRepository) mapModelToDomainCollection(ts []task) []domain.Task {
+	var tasks []domain.Task
+	for _, t := range ts {
+		tas := r.mapModelToDomain(t)
+		tasks = append(tasks, tas)
+	}
+	return tasks
 }
